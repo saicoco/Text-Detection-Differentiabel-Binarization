@@ -23,6 +23,28 @@ ic15_test_gt_dir = ic15_root_dir + 'ch4_test_localization_transcription_gt/'
 
 random.seed(123456)
 
+from albumentations import (
+    Compose, RGBShift, RandomBrightness, RandomContrast,
+    HueSaturationValue, ChannelShuffle, CLAHE,
+    RandomContrast, Blur, ToGray, JpegCompression,
+    CoarseDropout  
+)
+
+def augument():
+    augm = Compose([
+        RGBShift(),
+        RandomBrightness(),
+        RandomContrast(),
+        HueSaturationValue(p=0.2),
+        ChannelShuffle(),
+        CLAHE(),
+        Blur(),
+        ToGray(),
+        CoarseDropout()
+    ],
+    p=0.5)
+    return augm
+    
 def get_img(img_path):
     try:
         img = cv2.imread(img_path)
@@ -162,6 +184,7 @@ class IC15Loader(data.Dataset):
         self.img_paths = []
         self.gt_paths = []
 
+        self.aug = augument()
         for data_dir, gt_dir in zip(data_dirs, gt_dirs):
             img_names = util.io.ls(data_dir, '.jpg')
             img_names.extend(util.io.ls(data_dir, '.png'))
@@ -248,9 +271,10 @@ class IC15Loader(data.Dataset):
             img = Image.fromarray(img)
             img = img.convert('RGB')
         ori_img = img
+        img = self.aug(img)
         img = transforms.ToTensor()(img)
         img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(img)
-
+        
         probability_map = torch.from_numpy(probability_map[::4, ::4]).float()
         distance_map = torch.from_numpy(distance_map[::4, ::4]).float()
         threshold_map = torch.from_numpy(threshold_map[::4, ::4]).float()
