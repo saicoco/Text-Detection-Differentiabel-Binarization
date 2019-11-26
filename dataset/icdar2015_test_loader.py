@@ -25,9 +25,12 @@ def get_img(img_path):
 
 def scale(img, long_size=512):
     h, w = img.shape[0:2]
-    scale = long_size * 1.0 / min(h, w)
+    scale = long_size * 1.0 / max(h, w)
     img = cv2.resize(img, dsize=None, fx=scale, fy=scale)
-    return img, scale
+    new_H, new_W = img.shape[:2]
+    img_padd = np.zeros((long_size, long_size, 3), dtype=np.uint8)
+    img_padd[:new_H, :new_W, :] = img
+    return img_padd, scale
 
 class IC15TestLoader(data.Dataset):
     def __init__(self, root_dir, part_id=0, part_num=1, long_size=2240):
